@@ -1,0 +1,24 @@
+FROM bitnamilegacy/spark:3.5.0
+
+ENV PYTHONUNBUFFERED=1
+
+USER root
+
+# Instalacja zależności Pythona
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Kopiowanie kodu źródłowego
+COPY src /app/src
+COPY backend /app/backend
+
+# Ustawienie katalogu roboczego
+WORKDIR /app
+
+# Utworzenie katalogu cache i nadanie uprawnień
+RUN mkdir -p /app/.cache && chown -R 1001:1001 /app/.cache
+ENV XDG_CACHE_HOME=/app/.cache
+ENV HOME=/app
+
+# Przełączenie na użytkownika bez uprawnień root
+USER 1001

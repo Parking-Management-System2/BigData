@@ -1,0 +1,10 @@
+pyspark==3.5.0
+kafka-python==2.0.2
+pandas
+numpy
+fastapi
+uvicorn
+psycopg2-binary
+kagglehub
+python-dotenv
+sqlalchemy
