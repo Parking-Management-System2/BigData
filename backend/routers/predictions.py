@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db, ChurnPrediction
-from backend.schemas import CustomerData
+from backend.dto import CustomerData
 from backend.kafka_client import get_producer
 from src.config import KAFKA_TOPIC
 

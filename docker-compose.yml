@@ -56,7 +56,6 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=churn_db
-      - POSTGRES_DB=churn_db
     depends_on:
       - kafka
       - postgres
