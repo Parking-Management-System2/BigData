@@ -1,0 +1,47 @@
+# Models
+models/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+.env
+
+# Node
+node_modules/
+dist/
+.npm
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+
+# Distribution / packaging
+build/
+develop-eggs/
+eggs/
+*.egg-info/
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
