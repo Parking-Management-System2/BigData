@@ -63,6 +63,17 @@ services:
             - ./data:/app/data
             - ./models:/app/models
 
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend
+        ports:
+            - "3000:80"
+        depends_on:
+            - backend
+
+    # Producer zakomentowany, zeby dane byly generowane tylko przez backend
+
     # producer:
     #   build:
     #     context: .
