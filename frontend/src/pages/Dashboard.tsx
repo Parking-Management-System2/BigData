@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import {
+    AlertCircle,
     AlertTriangle,
     ChevronRight,
     Clock,
@@ -431,9 +432,12 @@ const Dashboard: React.FC = () => {
                                             <div className="w-28 progress-bar">
                                                 <div
                                                     className={`progress-bar-fill ${
-                                                        pred.churn_probability >
-                                                        0.5
+                                                        pred.churn_probability >=
+                                                        0.7
                                                             ? "bg-linear-to-r from-rose-500 to-pink-500"
+                                                            : pred.churn_probability >=
+                                                              0.4
+                                                            ? "bg-linear-to-r from-amber-500 to-orange-500"
                                                             : "bg-linear-to-r from-emerald-500 to-teal-500"
                                                     }`}
                                                     style={{
@@ -455,15 +459,24 @@ const Dashboard: React.FC = () => {
                                     <td className="py-4">
                                         <span
                                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                                                pred.prediction === 1
+                                                pred.churn_probability >= 0.7
                                                     ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                                    : pred.churn_probability >=
+                                                      0.4
+                                                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                                                     : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                                             }`}
                                         >
-                                            {pred.prediction === 1 ? (
+                                            {pred.churn_probability >= 0.7 ? (
                                                 <>
                                                     <AlertTriangle className="w-3 h-3" />{" "}
                                                     Ryzyko odpływu
+                                                </>
+                                            ) : pred.churn_probability >=
+                                              0.4 ? (
+                                                <>
+                                                    <AlertCircle className="w-3 h-3" />{" "}
+                                                    Możliwy odpływ
                                                 </>
                                             ) : (
                                                 <>

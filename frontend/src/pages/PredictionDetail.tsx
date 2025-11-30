@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import {
+    AlertCircle,
     AlertTriangle,
     ArrowLeft,
     Calendar,
@@ -95,7 +96,6 @@ const PredictionDetail: React.FC = () => {
         );
     }
 
-    const isChurn = prediction.prediction === 1;
     const probabilityPercent = (prediction.churn_probability * 100).toFixed(1);
 
     // Prepare history chart data (reverse to show oldest first)
@@ -184,15 +184,22 @@ const PredictionDetail: React.FC = () => {
                     <div className="flex justify-center mb-6">
                         <div
                             className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl text-lg font-semibold ${
-                                isChurn
+                                prediction.churn_probability >= 0.7
                                     ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                    : prediction.churn_probability >= 0.4
+                                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                                     : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             }`}
                         >
-                            {isChurn ? (
+                            {prediction.churn_probability >= 0.7 ? (
                                 <>
                                     <AlertTriangle className="w-6 h-6" />
                                     Ryzyko odpływu
+                                </>
+                            ) : prediction.churn_probability >= 0.4 ? (
+                                <>
+                                    <AlertCircle className="w-6 h-6" />
+                                    Możliwy odpływ
                                 </>
                             ) : (
                                 <>
@@ -225,8 +232,10 @@ const PredictionDetail: React.FC = () => {
                                 }}
                                 transition={{ duration: 1, ease: "easeOut" }}
                                 className={`h-full rounded-full ${
-                                    isChurn
+                                    prediction.churn_probability >= 0.7
                                         ? "bg-linear-to-r from-rose-500 to-pink-500"
+                                        : prediction.churn_probability >= 0.4
+                                        ? "bg-linear-to-r from-amber-500 to-orange-500"
                                         : "bg-linear-to-r from-emerald-500 to-teal-500"
                                 }`}
                             />
@@ -353,15 +362,20 @@ const PredictionDetail: React.FC = () => {
                         <div className="flex items-start gap-3">
                             <div
                                 className={`p-2 rounded-lg ${
-                                    isChurn
+                                    prediction.churn_probability >= 0.7
                                         ? "bg-rose-500/10"
+                                        : prediction.churn_probability >= 0.4
+                                        ? "bg-amber-500/10"
                                         : "bg-emerald-500/10"
                                 }`}
                             >
                                 <TrendingUp
                                     className={`w-5 h-5 ${
-                                        isChurn
+                                        prediction.churn_probability >= 0.7
                                             ? "text-rose-400"
+                                            : prediction.churn_probability >=
+                                              0.4
+                                            ? "text-amber-400"
                                             : "text-emerald-400"
                                     }`}
                                 />
@@ -371,8 +385,10 @@ const PredictionDetail: React.FC = () => {
                                     Rekomendacja
                                 </p>
                                 <p className="text-sm text-text-secondary">
-                                    {isChurn
+                                    {prediction.churn_probability >= 0.7
                                         ? "Zalecamy natychmiastowy kontakt z klientem. Rozważ zaoferowanie specjalnej promocji lub rabatu, aby zatrzymać klienta. Przeanalizuj historię interakcji i zidentyfikuj potencjalne problemy."
+                                        : prediction.churn_probability >= 0.4
+                                        ? "Klient wymaga uwagi. Zalecamy proaktywny kontakt w celu zbadania satysfakcji. Rozważ personalizowane oferty lub ankietę satysfakcji, aby zapobiec potencjalnemu odpływowi."
                                         : "Klient wydaje się zadowolony z usług. Kontynuuj dotychczasową strategię obsługi. Rozważ programy lojalnościowe, aby wzmocnić relację."}
                                 </p>
                             </div>
@@ -538,9 +554,12 @@ const PredictionDetail: React.FC = () => {
                                                 <div className="w-24 progress-bar">
                                                     <div
                                                         className={`progress-bar-fill ${
-                                                            hist.churn_probability >
-                                                            0.5
+                                                            hist.churn_probability >=
+                                                            0.7
                                                                 ? "bg-linear-to-r from-rose-500 to-pink-500"
+                                                                : hist.churn_probability >=
+                                                                  0.4
+                                                                ? "bg-linear-to-r from-amber-500 to-orange-500"
                                                                 : "bg-linear-to-r from-emerald-500 to-teal-500"
                                                         }`}
                                                         style={{
@@ -563,15 +582,26 @@ const PredictionDetail: React.FC = () => {
                                         <td className="py-4">
                                             <span
                                                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                                                    hist.prediction === 1
+                                                    hist.churn_probability >=
+                                                    0.7
                                                         ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                                        : hist.churn_probability >=
+                                                          0.4
+                                                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                                                         : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                                                 }`}
                                             >
-                                                {hist.prediction === 1 ? (
+                                                {hist.churn_probability >=
+                                                0.7 ? (
                                                     <>
                                                         <AlertTriangle className="w-3 h-3" />
                                                         Ryzyko
+                                                    </>
+                                                ) : hist.churn_probability >=
+                                                  0.4 ? (
+                                                    <>
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        Możliwy
                                                     </>
                                                 ) : (
                                                     <>
