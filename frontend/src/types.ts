@@ -35,3 +35,22 @@ export interface ChurnOverTimePoint {
     total: number;
     churn_count: number;
 }
+
+export interface CorrelationMatrix {
+    matrix: Record<string, Record<string, number>>;
+    features: string[];
+    error?: string;
+}
+
+export interface ConfusionMatrix {
+    matrix: number[][];
+    labels: string[];
+    metrics: {
+        accuracy: number;
+        precision: number;
+        recall: number;
+        f1_score: number;
+        auc?: number;
+    };
+    error?: string;
+}

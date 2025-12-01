@@ -42,8 +42,13 @@ services:
             - POSTGRES_USER=user
             - POSTGRES_PASSWORD=password
             - POSTGRES_DB=churn_db
+            - DATA_PATH=/app/data/WA_Fn-UseC_-Telco-Customer-Churn.csv
+            - CONFUSION_MATRIX_PATH=/app/models/confusion_matrix.json
         depends_on:
             - postgres
+        volumes:
+            - ./data:/app/data
+            - ./models:/app/models
 
     spark-worker:
         build:
