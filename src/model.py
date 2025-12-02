@@ -32,9 +32,7 @@ def train_model(data_path):
 
     full_pipeline = Pipeline(stages=pipeline.getStages() + [rf])
 
-    # -------------------------------
-    # 🔧 Strojenie hiperparametrów
-    # -------------------------------
+    # Strojenie hiperparametrów
     param_grid = (
         ParamGridBuilder()
         .addGrid(rf.numTrees, [50, 100, 200])
@@ -50,7 +48,7 @@ def train_model(data_path):
         estimatorParamMaps=param_grid,
         evaluator=evaluator,
         numFolds=5,  # 5-krotna walidacja krzyżowa
-        parallelism=4  # możesz zwiększyć jeśli masz więcej CPU
+        parallelism=4 # Równoległe przetwarzanie
     )
 
     print("Trenowanie modelu z tuningiem hiperparametrów...")
