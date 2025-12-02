@@ -25,6 +25,8 @@ import {
 } from "recharts";
 import {
     fetchChurnOverTime,
+    fetchConfusionMatrix,
+    fetchCorrelationMatrix,
     fetchRecentPredictions,
     fetchRiskDistribution,
     fetchStats,
@@ -32,6 +34,8 @@ import {
 import type {
     ChurnOverTimePoint,
     ChurnPrediction,
+    ConfusionMatrix,
+    CorrelationMatrix,
     RiskDistribution,
     Stats,
 } from "../types";
@@ -44,22 +48,28 @@ const Dashboard: React.FC = () => {
     const [recentPredictions, setRecentPredictions] = useState<
         ChurnPrediction[]
     >([]);
+    const [correlationMatrix, setCorrelationMatrix] = useState<CorrelationMatrix | null>(null);
+    const [confusionMatrix, setConfusionMatrix] = useState<ConfusionMatrix | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [statsRes, churnRes, riskRes, recentRes] =
+                const [statsRes, churnRes, riskRes, recentRes, corrRes, confRes] =
                     await Promise.all([
                         fetchStats(),
                         fetchChurnOverTime(),
                         fetchRiskDistribution(),
                         fetchRecentPredictions(),
+                        fetchCorrelationMatrix(),
+                        fetchConfusionMatrix(),
                     ]);
                 setStats(statsRes);
                 setChurnData(churnRes);
                 setRiskData(riskRes);
                 setRecentPredictions(recentRes);
+                setCorrelationMatrix(corrRes);
+                setConfusionMatrix(confRes);
             } catch (error) {
                 console.error("Failed to load dashboard data", error);
             } finally {
@@ -67,7 +77,13 @@ const Dashboard: React.FC = () => {
             }
         };
         loadData();
-        const interval = setInterval(loadData, 5000);
+        const interval = setInterval(() => {
+            // Nie odświeżamy macierzy co 5 sekund, tylko raz na początku
+            fetchStats().then(setStats).catch(console.error);
+            fetchChurnOverTime().then(setChurnData).catch(console.error);
+            fetchRiskDistribution().then(setRiskData).catch(console.error);
+            fetchRecentPredictions().then(setRecentPredictions).catch(console.error);
+        }, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -365,6 +381,223 @@ const Dashboard: React.FC = () => {
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
+                </motion.div>
+            </div>
+
+            {/* Correlation Matrix and Confusion Matrix */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Correlation Matrix */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="card-glow overflow-hidden"
+                >
+                    <div className="mb-6">
+                        <h2 className="text-xl font-semibold text-white">
+                            Macierz korelacji
+                        </h2>
+                        <p className="text-sm text-text-muted mt-1">
+                            Korelacje między cechami numerycznymi
+                        </p>
+                    </div>
+                    {correlationMatrix?.error ? (
+                        <div className="text-center py-8 text-text-muted">
+                            <p>{correlationMatrix.error}</p>
+                        </div>
+                    ) : correlationMatrix?.features && correlationMatrix.features.length > 0 ? (
+                        <div className="overflow-x-auto -mx-6 px-6">
+                            <div className="inline-block min-w-full">
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        <tr>
+                                            <th className="text-left pb-2 text-text-muted font-semibold sticky left-0 bg-surface z-10">
+                                                Cecha
+                                            </th>
+                                            {correlationMatrix.features.map((feat) => (
+                                                <th
+                                                    key={feat}
+                                                    className="px-2 pb-2 text-text-muted font-semibold text-center min-w-[80px]"
+                                                >
+                                                    {feat.length > 12
+                                                        ? feat.substring(0, 12) + "..."
+                                                        : feat}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {correlationMatrix.features.map((feat1) => (
+                                            <tr key={feat1}>
+                                                <td className="text-white font-medium py-2 pr-4 sticky left-0 bg-surface z-10">
+                                                    {feat1.length > 15
+                                                        ? feat1.substring(0, 15) + "..."
+                                                        : feat1}
+                                                </td>
+                                                {correlationMatrix.features.map((feat2) => {
+                                                    const value =
+                                                        correlationMatrix.matrix[feat1]?.[feat2] ?? 0;
+                                                    const absValue = Math.abs(value);
+                                                    const intensity = Math.min(absValue * 100, 100);
+                                                    const color =
+                                                        value >= 0
+                                                            ? `rgba(59, 130, 246, ${intensity / 100})`
+                                                            : `rgba(239, 68, 68, ${intensity / 100})`;
+                                                    return (
+                                                        <td
+                                                            key={feat2}
+                                                            className="px-2 py-2 text-center"
+                                                            style={{
+                                                                backgroundColor: color,
+                                                                color:
+                                                                    absValue > 0.5
+                                                                        ? "white"
+                                                                        : "#a1a1aa",
+                                                            }}
+                                                        >
+                                                            {value.toFixed(2)}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-text-muted">
+                            <p>Ładowanie macierzy korelacji...</p>
+                        </div>
+                    )}
+                </motion.div>
+
+                {/* Confusion Matrix */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="card-glow overflow-hidden"
+                >
+                    <div className="mb-6">
+                        <h2 className="text-xl font-semibold text-white">
+                            Macierz pomyłek
+                        </h2>
+                        <p className="text-sm text-text-muted mt-1">
+                            Wydajność modelu klasyfikacji
+                        </p>
+                    </div>
+                    {confusionMatrix?.error ? (
+                        <div className="text-center py-8 text-text-muted">
+                            <p>{confusionMatrix.error}</p>
+                        </div>
+                    ) : confusionMatrix?.matrix ? (
+                        <div className="space-y-6">
+                            <div className="flex justify-center">
+                                <div className="inline-block">
+                                    <table className="text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th className="px-4 py-2"></th>
+                                                <th className="px-4 py-2 text-text-muted font-semibold text-center">
+                                                    Przewidziano: No Churn
+                                                </th>
+                                                <th className="px-4 py-2 text-text-muted font-semibold text-center">
+                                                    Przewidziano: Churn
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {confusionMatrix.matrix.map((row, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-4 py-2 text-text-muted font-semibold text-right">
+                                                        Rzeczywistość:{" "}
+                                                        {confusionMatrix.labels[idx]}
+                                                    </td>
+                                                    {row.map((cell, cellIdx) => {
+                                                        const isDiagonal = idx === cellIdx;
+                                                        const maxVal = Math.max(
+                                                            ...confusionMatrix.matrix.flat()
+                                                        );
+                                                        const intensity = cell / maxVal;
+                                                        const color = isDiagonal
+                                                            ? `rgba(34, 197, 94, ${0.3 + intensity * 0.5})`
+                                                            : `rgba(239, 68, 68, ${0.3 + intensity * 0.5})`;
+                                                        return (
+                                                            <td
+                                                                key={cellIdx}
+                                                                className="px-4 py-3 text-center font-bold text-white"
+                                                                style={{
+                                                                    backgroundColor: color,
+                                                                    minWidth: "120px",
+                                                                }}
+                                                            >
+                                                                {cell}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {confusionMatrix.metrics && (
+                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                                    <div className="text-center">
+                                        <p className="text-xs text-text-muted mb-1">
+                                            Dokładność
+                                        </p>
+                                        <p className="text-lg font-bold text-white">
+                                            {(
+                                                confusionMatrix.metrics.accuracy * 100
+                                            ).toFixed(2)}
+                                            %
+                                        </p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-xs text-text-muted mb-1">
+                                            Precyzja
+                                        </p>
+                                        <p className="text-lg font-bold text-white">
+                                            {(
+                                                confusionMatrix.metrics.precision * 100
+                                            ).toFixed(2)}
+                                            %
+                                        </p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-xs text-text-muted mb-1">
+                                            Czułość (Recall)
+                                        </p>
+                                        <p className="text-lg font-bold text-white">
+                                            {(confusionMatrix.metrics.recall * 100).toFixed(2)}%
+                                        </p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-xs text-text-muted mb-1">
+                                            F1-Score
+                                        </p>
+                                        <p className="text-lg font-bold text-white">
+                                            {(confusionMatrix.metrics.f1_score * 100).toFixed(2)}%
+                                        </p>
+                                    </div>
+                                    {confusionMatrix.metrics.auc && (
+                                        <div className="text-center col-span-2">
+                                            <p className="text-xs text-text-muted mb-1">AUC</p>
+                                            <p className="text-lg font-bold text-white">
+                                                {confusionMatrix.metrics.auc.toFixed(4)}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-text-muted">
+                            <p>Ładowanie macierzy pomyłek...</p>
+                        </div>
+                    )}
                 </motion.div>
             </div>
 

@@ -18,6 +18,14 @@ def run_consumer():
              from src.data_loader import download_data
              download_data()
         train_model(DATA_PATH)
+    else:
+        # Sprawdź, czy macierz pomyłek istnieje, jeśli nie - wygeneruj ją
+        from src.model import generate_confusion_matrix_from_existing_model
+        confusion_matrix_path = os.path.join(os.path.dirname(MODEL_PATH), "confusion_matrix.json")
+        if not os.path.exists(confusion_matrix_path):
+            print("Model istnieje, ale macierz pomyłek nie. Próba wygenerowania...")
+            if os.path.exists(DATA_PATH):
+                generate_confusion_matrix_from_existing_model(DATA_PATH)
     
     model = load_model()
     print("Model załadowany.")

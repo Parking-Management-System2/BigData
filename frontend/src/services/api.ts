@@ -2,6 +2,8 @@ import axios from "axios";
 import type {
     ChurnOverTimePoint,
     ChurnPrediction,
+    CorrelationMatrix,
+    ConfusionMatrix,
     CustomerData,
     RiskDistribution,
     Stats,
@@ -52,5 +54,15 @@ export const fetchCustomerHistory = async (
     customerId: string
 ): Promise<ChurnPrediction[]> => {
     const response = await api.get(`/predictions/${customerId}`);
+    return response.data;
+};
+
+export const fetchCorrelationMatrix = async (): Promise<CorrelationMatrix> => {
+    const response = await api.get("/correlation-matrix");
+    return response.data;
+};
+
+export const fetchConfusionMatrix = async (): Promise<ConfusionMatrix> => {
+    const response = await api.get("/confusion-matrix");
     return response.data;
 };
