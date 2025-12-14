@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db, ChurnPrediction
 import pandas as pd
@@ -199,6 +199,108 @@ def get_confusion_matrix():
         return {
             "error": f"Błąd podczas wczytywania macierzy pomyłek: {str(e)}",
             "matrix": [[0, 0], [0, 0]],
-            "labels": ["No Churn", "Churn"],
             "metrics": {}
+        }
+
+def _load_training_data():
+    data_path = os.getenv("DATA_PATH", "/app/data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
+    
+    if not os.path.exists(data_path):
+        # Fallback paths
+        possible_paths = [
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "WA_Fn-UseC_-Telco-Customer-Churn.csv"),
+            "data/WA_Fn-UseC_-Telco-Customer-Churn.csv"
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                data_path = path
+                break
+    
+    if not os.path.exists(data_path):
+        return None
+        
+    try:
+        return pd.read_csv(data_path)
+    except Exception:
+        return None
+
+@router.get("/feature-stats")
+def get_feature_stats():
+    df = _load_training_data()
+    
+    if df is None:
+        return {"error": "Nie można załadować danych treningowych"}
+        
+    # Wybór kolumn numerycznych
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    stats = {}
+    for col in numeric_cols:
+        # Pomiń ID lub inne nieistotne
+        if col.lower() == "customerid":
+            continue
+            
+        desc = df[col].describe()
+        stats[col] = {
+            "mean": float(desc['mean']),
+            "std": float(desc['std']),
+            "min": float(desc['min']),
+            "max": float(desc['max']),
+            "q1": float(desc['25%']),
+            "median": float(desc['50%']),
+            "q3": float(desc['75%'])
+        }
+        
+    return stats
+
+@router.get("/feature-distribution/{feature_name}")
+def get_feature_distribution(feature_name: str):
+    df = _load_training_data()
+    
+    if df is None:
+        raise HTTPException(status_code=404, detail="Dane treningowe nie są dostępne")
+        
+    if feature_name not in df.columns:
+         raise HTTPException(status_code=404, detail=f"Cecha '{feature_name}' nie istnieje w danych")
+         
+    # Sprawdź typ danych
+    if np.issubdtype(df[feature_name].dtype, np.number):
+        # Histogram dla zmiennych numerycznych
+        # Usuń NaN
+        data = df[feature_name].dropna()
+        
+        # Oblicz histogram
+        counts, bin_edges = np.histogram(data, bins=20)
+        
+        # Przygotuj wynik
+        distribution = []
+        for i in range(len(counts)):
+            distribution.append({
+                "bin_start": float(bin_edges[i]),
+                "bin_end": float(bin_edges[i+1]),
+                "count": int(counts[i])
+            })
+            
+        return {
+            "type": "numerical",
+            "feature": feature_name,
+            "data": distribution,
+            "min": float(data.min()),
+            "max": float(data.max())
+        }
+    else:
+        # Value counts dla zmiennych kategorycznych
+        counts = df[feature_name].value_counts().to_dict()
+        
+        distribution = []
+        for key, value in counts.items():
+            distribution.append({
+                "value": str(key),
+                "count": int(value)
+            })
+            
+        return {
+            "type": "categorical",
+            "feature": feature_name,
+            "data": distribution
         }
