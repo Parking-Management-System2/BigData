@@ -17,7 +17,8 @@ SPARK_APP_NAME = "TelcoChurnProject"
 SPARK_MASTER = os.getenv("SPARK_MASTER", "local[*]")
 
 # Ścieżki
-DATA_PATH = os.getenv("DATA_PATH", "/app/data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
+# Używamy zaugmentowanego zbioru danych (po SMOTE) dla lepszego balansu klas
+DATA_PATH = os.getenv("DATA_PATH", "/app/data/augmented_telco_churn.csv")
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/rf_churn_model")
 
 # Delays Configuration
