@@ -95,11 +95,18 @@ def compare_numeric_distributions(df_original, df_augmented, numeric_features, o
     """
     n_features = len(numeric_features)
     
-    # Create separate figure for each feature for better readability
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    # Create grid based on number of features
+    n_cols = 2
+    n_rows = (n_features + n_cols - 1) // n_cols
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 6 * n_rows))
     fig.suptitle('Numeric Feature Distributions: Before vs After Augmentation',
                  fontsize=18, fontweight='bold', y=0.995)
     
+    if n_rows == 1 and n_cols > 1:
+        axes = axes.reshape(1, -1)
+    if not isinstance(axes, np.ndarray):
+        axes = np.array([axes])
     axes = axes.flatten()
     
     statistics_comparison = []
@@ -165,7 +172,11 @@ def compare_numeric_distributions(df_original, df_augmented, numeric_features, o
                 'Significant_Diff': False
             })
     
-    plt.tight_layout()
+    # Hide unused subplots
+    for idx in range(n_features, len(axes)):
+        axes[idx].axis('off')
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.98])
     
     output_path = os.path.join(output_dir, 'numeric_distributions_comparison.png')
     plt.savefig(output_path, dpi=200, bbox_inches='tight', facecolor='white')
@@ -246,7 +257,7 @@ def compare_categorical_distributions(df_original, df_augmented, categorical_fea
     for idx in range(n_features, len(axes)):
         axes[idx].axis('off')
     
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.98])
     
     output_path = os.path.join(output_dir, 'categorical_distributions_comparison.png')
     plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
@@ -258,15 +269,15 @@ def compare_categorical_distributions(df_original, df_augmented, categorical_fea
 
 def check_for_anomalies(df_original, df_augmented, numeric_features):
     """
-    Sprawdza, czy w zaugmentowanych danych nie ma anomalii (wartości niemożliwych).
+    Checks if augmented data contains anomalies (impossible values).
     
     Args:
-        df_original: DataFrame z oryginalnymi danymi
-        df_augmented: DataFrame z zaugmentowanymi danymi
-        numeric_features: Lista cech numerycznych
+        df_original: DataFrame with original data
+        df_augmented: DataFrame with augmented data
+        numeric_features: List of numeric features
         
     Returns:
-        anomalies: DataFrame z wykrytymi anomaliami
+        anomalies: DataFrame with detected anomalies
     """
     anomalies = []
     
@@ -277,11 +288,11 @@ def check_for_anomalies(df_original, df_augmented, numeric_features):
         aug_min = df_augmented[feature].min()
         aug_max = df_augmented[feature].max()
         
-        # Sprawdzenie wartości poza zakresem oryginalnym
+        # Check for values outside original range
         out_of_range_min = aug_min < orig_min
         out_of_range_max = aug_max > orig_max
         
-        # Sprawdzenie wartości ujemnych dla cech, które nie powinny być ujemne
+        # Check for negative values for features that shouldn't be negative
         negative_values = (df_augmented[feature] < 0).sum() if aug_min < 0 else 0
         
         if out_of_range_min or out_of_range_max or negative_values > 0:
@@ -310,11 +321,18 @@ def compare_class_conditional_distributions(df_original, df_augmented, numeric_f
     """
     n_features = len(numeric_features)
     
-    # Create separate figure for each feature for better readability
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    # Create grid based on number of features
+    n_cols = 2
+    n_rows = (n_features + n_cols - 1) // n_cols
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 6 * n_rows))
     fig.suptitle('Numeric Feature Distributions by Churn Class',
                  fontsize=18, fontweight='bold', y=0.995)
     
+    if n_rows == 1 and n_cols > 1:
+        axes = axes.reshape(1, -1)
+    if not isinstance(axes, np.ndarray):
+        axes = np.array([axes])
     axes = axes.flatten()
     
     for idx, feature in enumerate(numeric_features):
@@ -340,7 +358,11 @@ def compare_class_conditional_distributions(df_original, df_augmented, numeric_f
         ax.grid(True, alpha=0.3, linestyle='--')
         ax.tick_params(labelsize=11)
     
-    plt.tight_layout()
+    # Hide unused subplots
+    for idx in range(n_features, len(axes)):
+        axes[idx].axis('off')
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.98])
     
     output_path = os.path.join(output_dir, 'class_conditional_distributions.png')
     plt.savefig(output_path, dpi=200, bbox_inches='tight', facecolor='white')
@@ -441,51 +463,69 @@ def generate_summary_report(df_original, df_augmented, numeric_stats, categorica
 
 def run_post_augmentation_analysis(original_path: str, augmented_path: str, output_dir: str):
     """
-    Uruchamia pełną analizę zbioru po zbalansowaniu.
+    Runs full post-augmentation analysis.
     
     Args:
-        original_path: Ścieżka do oryginalnego pliku CSV
-        augmented_path: Ścieżka do zaugmentowanego pliku CSV
-        output_dir: Katalog do zapisu wyników
+        original_path: Path to original CSV file
+        augmented_path: Path to augmented CSV file
+        output_dir: Directory to save results
     """
     os.makedirs(output_dir, exist_ok=True)
     
-    # 1. Wczytanie danych
+    # Define features to analyze (matching preprocessing.py)
+    categorical_cols = [
+        "InternetService", "OnlineSecurity",
+        "DeviceProtection", "TechSupport",
+        "Contract", "PaymentMethod"
+    ]
+    numeric_cols = ["tenure", "MonthlyCharges", "TotalCharges"]
+    
+    # 1. Load data
     df_original, df_augmented = load_datasets(original_path, augmented_path)
     
-    # 2. Identify feature types
-    numeric_features, categorical_features = identify_feature_types(df_original)
-    print(f"\n[INFO] Feature identification:")
-    print(f"   • Numeric: {len(numeric_features)}")
-    print(f"   • Categorical: {len(categorical_features)}")
+    # 2. Filter features to only those specified
+    # Verify features exist in dataset
+    available_categorical = [col for col in categorical_cols if col in df_original.columns]
+    available_numeric = [col for col in numeric_cols if col in df_original.columns]
+    
+    print(f"\n[INFO] Feature selection:")
+    print(f"   • Numeric features: {len(available_numeric)} ({', '.join(available_numeric)})")
+    print(f"   • Categorical features: {len(available_categorical)} ({', '.join(available_categorical)})")
+    
+    if len(available_numeric) == 0:
+        print("[ERROR] No numeric features found!")
+        return
+    if len(available_categorical) == 0:
+        print("[ERROR] No categorical features found!")
+        return
     
     # 3. Compare numeric distributions
     print(f"\n[INFO] Analyzing numeric features...")
     numeric_stats = compare_numeric_distributions(
-        df_original, df_augmented, numeric_features, output_dir
+        df_original, df_augmented, available_numeric, output_dir
     )
     
     # 4. Compare categorical distributions
     print(f"\n[INFO] Analyzing categorical features...")
     categorical_stats = compare_categorical_distributions(
-        df_original, df_augmented, categorical_features, output_dir
+        df_original, df_augmented, available_categorical, output_dir
     )
     
     # 5. Class-conditional distributions
     print(f"\n[INFO] Analyzing class-conditional distributions...")
     compare_class_conditional_distributions(
-        df_original, df_augmented, numeric_features, output_dir
+        df_original, df_augmented, available_numeric, output_dir
     )
     
     # 6. Check for anomalies
     print(f"\n[INFO] Verifying anomalies...")
-    anomalies = check_for_anomalies(df_original, df_augmented, numeric_features)
+    anomalies = check_for_anomalies(df_original, df_augmented, available_numeric)
     if len(anomalies) > 0:
         print(f"   [WARNING] Found {len(anomalies)} potential anomalies")
     else:
         print(f"   [OK] No anomalies detected")
     
-    # 7. Generowanie raportu
+    # 7. Generate report
     generate_summary_report(df_original, df_augmented, numeric_stats, 
                            categorical_stats, anomalies)
     
